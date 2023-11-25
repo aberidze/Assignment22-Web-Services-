@@ -1,19 +1,13 @@
 //
-//  ViewController.swift
+//  HomeViewController.swift
 //  Assignment22 (Web Services)
 //
-//  Created by Macbook Air 13 on 19.11.23.
+//  Created by Macbook Air 13 on 25.11.23.
 //
 
 import UIKit
 
-// MARK: - Protocol HomeViewControllerDelegate
-protocol HomeViewControllerDelegate: AnyObject {
-    func changeMovieFavoriteStatus(for movie: MovieCell?)
-}
-
-
-class HomeViewController: UIViewController {
+final class HomeViewController: UIViewController {
 
     // MARK: - Properties
     private let appLogoImageView: UIImageView = {
@@ -66,11 +60,14 @@ class HomeViewController: UIViewController {
         return collectionView
     }()
     
+    private var movies = [MovieModel]()
+    
     
     // MARK: - View Life Cycles
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        fetchMovies()
     }
     
     
@@ -108,6 +105,20 @@ class HomeViewController: UIViewController {
         moviesCollectionView.register(MovieCell.self, forCellWithReuseIdentifier: "MovieCell")
     }
     
+    private func fetchMovies() {
+        NetworkManager.shared.fetchMovies { [weak self] result in
+            switch result {
+            case .success(let movies):
+                self?.movies = movies
+                DispatchQueue.main.async {
+                    self?.moviesCollectionView.reloadData()
+                }
+            case .failure(_):
+                print("Failed")
+            }
+        }
+    }
+    
     
     // MARK: - Constraints
     private func setMainStackViewConstraints() {
@@ -132,8 +143,15 @@ extension HomeViewController: UICollectionViewDelegate, UICollectionViewDataSour
             return UICollectionViewCell()
         }
         cell.configureCell(for: movies[indexPath.row])
-        cell.delegate = self
         return cell
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        
+        let movieDetailViewController = MovieDetailViewController()
+        navigationController?.pushViewController(movieDetailViewController, animated: true)
+        let movieClicked = movies[indexPath.row]
+        movieDetailViewController.configure(for: movieClicked)
     }
 }
 
@@ -146,19 +164,5 @@ extension HomeViewController: UICollectionViewDelegateFlowLayout {
         let cellHeight = 278.0
         
         return CGSize(width: cellWidth, height: cellHeight)
-    }
-}
-
-
-// MARK: - HomeViewControllerDelegate
-extension HomeViewController: HomeViewControllerDelegate {
-    func changeMovieFavoriteStatus(for cell: MovieCell?) {
-        guard let cell,
-              let indexPath = moviesCollectionView.indexPath(for: cell)
-        else { return }
-        
-        let movieToModify = movies[indexPath.row]
-        movieToModify.isFavorite = !movieToModify.isFavorite
-        moviesCollectionView.reloadData()
     }
 }

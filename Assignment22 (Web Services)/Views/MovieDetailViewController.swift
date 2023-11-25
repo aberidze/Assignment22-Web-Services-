@@ -2,13 +2,13 @@
 //  MovieDetailViewController.swift
 //  Assignment22 (Web Services)
 //
-//  Created by Macbook Air 13 on 25.11.23.
+//  Created by Macbook Air 13 on 26.11.23.
 //
 
 import UIKit
 
-class MovieDetailViewController: UIViewController {
-    
+final class MovieDetailViewController: UIViewController {
+
     // MARK: - Properties
     private let customTitleLabel: UILabel = {
         let label = UILabel()
@@ -51,9 +51,8 @@ class MovieDetailViewController: UIViewController {
         return label
     }()
     
-    private let imdbLabel: UILabel = {
+    private let reviewNumberLabel: UILabel = {
         let label = UILabel()
-        label.text = "IMDb"
         label.font = UIFont(name: "Helvetica", size: 14)
         label.textColor = UIColor(red: 99 / 255.0, green: 115 / 255.0, blue: 148 / 255.0, alpha: 1)
         return label
@@ -63,10 +62,18 @@ class MovieDetailViewController: UIViewController {
         let stackView = UIStackView()
         stackView.backgroundColor = UIColor(red: 26 / 255.0, green: 34 / 255.0, blue: 50 / 255.0, alpha: 1)
         stackView.axis = .vertical
-        stackView.spacing = 16
+        stackView.spacing = 10
         stackView.isLayoutMarginsRelativeArrangement = true
         stackView.layoutMargins = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
         return stackView
+    }()
+    
+    private let plotLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont(name: "Helvetica-Bold", size: 18.0)
+        label.textColor = .white
+        label.text = "PLOT:"
+        return label
     }()
     
     private let descriptionLabel: UILabel = {
@@ -75,13 +82,6 @@ class MovieDetailViewController: UIViewController {
         label.textColor = .white
         label.numberOfLines = 0
         return label
-    }()
-    
-    private let detailsTableStackView: UIStackView = {
-        let stackView = UIStackView()
-        stackView.axis = .vertical
-        stackView.spacing = 12
-        return stackView
     }()
     
     private let bottomSessionStackView: UIStackView = {
@@ -103,11 +103,11 @@ class MovieDetailViewController: UIViewController {
         return button
     }()
     
-    weak var movie: Movie?
+    private var movie: MovieModel?
     
     
     // MARK: - Configure
-    private func configure(for movie: Movie) {
+    func configure(for movie: MovieModel) {
         self.movie = movie
     }
     
@@ -129,10 +129,9 @@ class MovieDetailViewController: UIViewController {
         fillViewsWithMovieData()
         setupMovieDescriptionStackView()
         fillMovieDescriptionStackView()
-        fillDetailsTableStackView()
         setupBottomSessionStackView()
     }
-    
+
     private func setupBackground() {
         view.backgroundColor = UIColor(red: 31 / 255.0, green: 41 / 255.0, blue: 61 / 255.0, alpha: 1)
     }
@@ -153,7 +152,7 @@ class MovieDetailViewController: UIViewController {
     
     private func fillRatingsStackView() {
         ratingsStackView.addArrangedSubview(ratingLabel)
-        ratingsStackView.addArrangedSubview(imdbLabel)
+        ratingsStackView.addArrangedSubview(reviewNumberLabel)
     }
     
     private func setupMovieDescriptionStackView() {
@@ -161,39 +160,10 @@ class MovieDetailViewController: UIViewController {
     }
     
     private func fillMovieDescriptionStackView() {
+        movieDescriptionStackView.addArrangedSubview(plotLabel)
         movieDescriptionStackView.addArrangedSubview(descriptionLabel)
-        movieDescriptionStackView.addArrangedSubview(detailsTableStackView)
         // Adding Empty StackView for adjusting UI
         movieDescriptionStackView.addArrangedSubview(UIStackView())
-    }
-    
-    private func fillDetailsTableStackView() {
-        addDetailToDetailsTableStackView(title: "Certificate", detail: movie?.certificate ?? "")
-        addDetailToDetailsTableStackView(title: "Runtime", detail: movie?.runtime ?? "")
-        addDetailToDetailsTableStackView(title: "Release", detail: movie?.release ?? "")
-        addDetailToDetailsTableStackView(title: "Genre", detail: movie?.genres ?? "")
-        addDetailToDetailsTableStackView(title: "Director", detail: movie?.director ?? "")
-        addDetailToDetailsTableStackView(title: "Cast", detail: movie?.cast ?? "")
-    }
-    
-    private func addDetailToDetailsTableStackView(title: String, detail: String) {
-        let titleLabel = UILabel()
-        titleLabel.font = UIFont(name: "Helvetica", size: 14)
-        titleLabel.textColor = UIColor(red: 99 / 255.0, green: 115 / 255.0, blue: 148 / 255.0, alpha: 1)
-        titleLabel.widthAnchor.constraint(equalToConstant: 74.0).isActive = true
-        titleLabel.text = title
-        
-        let detailLabel = UILabel()
-        detailLabel.font = UIFont(name: "Helvetica", size: 14)
-        detailLabel.textColor = .white
-        detailLabel.numberOfLines = 0
-        detailLabel.text = detail
-        
-        let singleDetailStackView = UIStackView(arrangedSubviews: [titleLabel, detailLabel])
-        singleDetailStackView.alignment = .leading
-        singleDetailStackView.spacing = 16
-        
-        detailsTableStackView.addArrangedSubview(singleDetailStackView)
     }
     
     private func setupBottomSessionStackView() {
@@ -204,9 +174,18 @@ class MovieDetailViewController: UIViewController {
     
     private func fillViewsWithMovieData() {
         customTitleLabel.text = movie?.title
-        movieCoverImageView.image = UIImage(named: movie?.movieSceneImageName ?? "")
-        ratingLabel.text = "\(movie?.imdbRating ?? 0.0)"
-        descriptionLabel.text = movie?.plot
+        setMovieImage(from: (movie?.posterPath ?? ""))
+        ratingLabel.text = "\(round(movie?.voteAverage ?? 0))"
+        reviewNumberLabel.text = "(Reviewed by \(movie?.voteCount ?? 0))"
+        descriptionLabel.text = movie?.overview
+    }
+    
+    private func setMovieImage(from url: String) {
+        NetworkManager.shared.downloadImage(from: url) { [weak self] image in
+            DispatchQueue.main.async {
+                self?.movieCoverImageView.image = image
+            }
+        }
     }
     
     

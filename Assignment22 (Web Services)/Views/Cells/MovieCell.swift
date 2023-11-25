@@ -7,7 +7,7 @@
 
 import UIKit
 
-class MovieCell: UICollectionViewCell {
+final class MovieCell: UICollectionViewCell {
     
     // MARK: - Properties
     private let mainStackView: UIStackView = {
@@ -41,17 +41,11 @@ class MovieCell: UICollectionViewCell {
         return label
     }()
     
-    private let movieGenresLabel: UILabel = {
+    private let releaseYearLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont(name: "Helvetica", size: 14.0)
         label.textColor = UIColor(red: 99 / 255.0, green: 115 / 255.0, blue: 148 / 255.0, alpha: 1)
         return label
-    }()
-    
-    private let favoritesButton: UIButton = {
-        let button = UIButton(frame: CGRect(x: 10, y: 5, width: 20, height: 20))
-        button.tintColor = .systemRed
-        return button
     }()
     
     private let movieRatingsLabel: UILabel = {
@@ -65,21 +59,13 @@ class MovieCell: UICollectionViewCell {
         return label
     }()
     
-    weak var delegate: HomeViewControllerDelegate?
-    
     
     // MARK: - Configure
-    func configureCell(for movie: Movie) {
-        movieCoverImageView.image = UIImage(named: movie.coverImageName)
+    func configureCell(for movie: MovieModel) {
+        setMovieImage(from: movie.posterPath)
         movieTitleLabel.text = movie.title
-        movieGenresLabel.text = movie.genres
-        movieRatingsLabel.text = "\(movie.imdbRating)"
-        
-        if movie.isFavorite {
-            favoritesButton.setImage(UIImage(systemName: "heart.fill"), for: .normal)
-        } else {
-            favoritesButton.setImage(UIImage(systemName: "heart"), for: .normal)
-        }
+        movieRatingsLabel.text = "\(round(movie.voteAverage))"
+        releaseYearLabel.text = "(\(movie.releaseDate.prefix(4)))"
     }
     
     
@@ -97,7 +83,11 @@ class MovieCell: UICollectionViewCell {
     
     // MARK: - Cell Life Cycle
     override func prepareForReuse() {
+        super.prepareForReuse()
         
+        movieCoverImageView.image = nil
+        movieTitleLabel.text = nil
+        movieRatingsLabel.text = nil
     }
     
     
@@ -106,8 +96,7 @@ class MovieCell: UICollectionViewCell {
         setupMainStackView()
         fillMainStackView()
         fillTitleStackView()
-        addOverlayViewsToCell()
-        setFavoriteButtonAction()
+        addOverlayViewToCell()
     }
     
     private func setupMainStackView() {
@@ -122,18 +111,19 @@ class MovieCell: UICollectionViewCell {
     
     private func fillTitleStackView() {
         titleStackView.addArrangedSubview(movieTitleLabel)
-        titleStackView.addArrangedSubview(movieGenresLabel)
+        titleStackView.addArrangedSubview(releaseYearLabel)
     }
     
-    private func addOverlayViewsToCell() {
-        addSubview(favoritesButton)
+    private func addOverlayViewToCell() {
         addSubview(movieRatingsLabel)
     }
     
-    private func setFavoriteButtonAction() {
-        favoritesButton.addAction(UIAction(handler: { [weak self] _ in
-            self?.delegate?.changeMovieFavoriteStatus(for: self)
-        }), for: .touchUpInside)
+    private func setMovieImage(from url: String) {
+        NetworkManager.shared.downloadImage(from: url) { [weak self] image in
+            DispatchQueue.main.async {
+                self?.movieCoverImageView.image = image
+            }
+        }
     }
     
     
